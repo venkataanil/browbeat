@@ -1,0 +1,90 @@
+---
+
+- name: install pip in containers
+  shell:
+    docker exec -u root {{ item }} easy_install pip
+  become: true
+  with_items:
+    - neutron_api
+
+- name: install Pre-req packages
+  become: true
+  shell:
+    docker exec -u root {{ item }} yum install gcc python-devel git -y
+  with_items:
+    - neutron_api
+
+- name: copy neutron-trace-profiler
+  become: true
+  shell:
+    docker exec -u root {{ item }} git clone https://github.com/venkataanil/neutron-trace-profiler.git /tmp/neutron-trace-profiler
+  with_items:
+    - neutron_api
+
+- name: build neutron-trace-profiler
+  become: true
+  shell:
+    docker exec -u root {{ item }} bash -c "cd /tmp/neutron-trace-profiler && python setup.py install"
+  with_items:
+    - neutron_api
+
+- name: Update Neutron's config trace_profiler
+  become: true
+  ini_file:
+    path: /var/lib/config-data/puppet-generated/neutron/etc/neutron/neutron.conf
+    section: trace_profiler
+    option: enabled
+    value: True
+    backup: yes
+
+- name: Update Neutron's config sock_path
+  become: true
+  ini_file:
+    path: /var/lib/config-data/puppet-generated/neutron/etc/neutron/neutron.conf
+    section: trace_profiler
+    option: sock_path
+    value: /var/log/neutron/trace_profiler_sock
+    backup: yes
+
+- name: Update Neutron's config trace_path
+  become: true
+  ini_file:
+    path: /var/lib/config-data/puppet-generated/neutron/etc/neutron/neutron.conf
+    section: trace_profiler
+    option: trace_path
+    value: /var/log/neutron/trace_profiler_files
+    backup: yes
+
+- name: Update Neutron's config trace_format
+  become: true
+  ini_file:
+    path: /var/lib/config-data/puppet-generated/neutron/etc/neutron/neutron.conf
+    section: trace_profiler
+    option: trace_format
+    value: pstat
+    backup: yes
+
+- name: Update neutron's config extensions
+  become: true
+  ini_file:
+    path: /var/lib/config-data/puppet-generated/neutron/etc/neutron/neutron.conf
+    section: agent
+    option: extensions
+    value: trace_profiler
+    backup: yes
+
+- name: Update neutron's config service_plugins
+  become: true
+  ini_file:
+    path: /var/lib/config-data/puppet-generated/neutron/etc/neutron/neutron.conf
+    section: DEFAULT
+    option: service_plugins
+    value: "{{ profile_neutron_service_plugins }}"
+    backup: yes
+
+- name: restart containers
+  shell:
+    docker restart {{ item }}
+  become: true
+  with_items:
+    - neutron_api

@@ -52,6 +52,11 @@ supported_distro: ((ansible_distribution == "CentOS" && ansible_distribution_maj
 # iptables file - RHEL (/etc/sysconfig/iptables) CentOS (/etc/sysconfig/iptables-config)
 iptables_file: /etc/sysconfig/iptables
 
+#######################################
+# Setup Profiling
+#######################################
+profile_neutron_service_plugins: router,qos,segments,trunk,neutron_trace_profiler.profiler.Profiler
+
 ########################################
 # Browbeat Workloads
 ########################################
